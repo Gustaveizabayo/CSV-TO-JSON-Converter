@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV to JSON Converter | Modern Tool</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+  --primary: #0052cc;
+  --secondary: #2684ff;
+  --accent: #00bfa6;
+  --background: #f4f6f8;
+  --card-bg: #ffffff;
+  --error: #ff6b6b;
+  --border-radius: 12px;
+  --box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  --transition: all 0.3s ease;
+}
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+body { background-color: var(--background); color:#333; line-height:1.6; }
+.container { max-width:1200px; margin:0 auto; padding:2rem; }
+h1 { font-size:2.75rem; font-weight:700; color:var(--primary); text-align:center; }
+.subtitle { font-size:1.1rem; color:#555; text-align:center; margin-top:0.5rem; margin-bottom:2rem; }
+
+.app-container { display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+@media(max-width:900px){.app-container{grid-template-columns:1fr;}}
+
+.panel { background-color:var(--card-bg); border-radius:var(--border-radius); box-shadow:var(--box-shadow); padding:2rem; display:flex; flex-direction:column; }
+.panel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+.panel-title { font-size:1.5rem; font-weight:600; color:var(--primary); display:flex; align-items:center; gap:0.5rem; }
+
+.btn { padding:0.6rem 1.2rem; border:none; border-radius:var(--border-radius); font-weight:600; cursor:pointer; transition:var(--transition); display:inline-flex; align-items:center; gap:0.5rem; }
+.btn:hover{transform:scale(1.05);}
+.btn-primary{background-color:var(--primary); color:#fff;}
+.btn-primary:hover{background-color:var(--secondary);}
+.btn-outline{background-color:transparent; border:2px solid var(--primary); color:var(--primary);}
+.btn-outline:hover{background-color:var(--primary); color:#fff;}
+.btn-success{background-color:var(--accent); color:#fff;}
+.btn-warning{background-color:var(--error); color:#fff;}
+
+textarea, select, input { width:100%; padding:1rem; border-radius:var(--border-radius); border:1px solid #ccc; font-size:0.95rem; transition:var(--transition); font-family:'Consolas',monospace;}
+textarea:focus, select:focus, input:focus { outline:none; border-color:var(--secondary); box-shadow:0 0 0 4px rgba(38,132,255,0.15); }
+
+.drag-drop-area { border:2px dashed #ccc; border-radius:var(--border-radius); padding:2rem; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:0.75rem; cursor:pointer; transition:var(--transition); background-color:#fafafa;}
+.drag-drop-area.dragover, .drag-drop-area:hover { border-color:var(--primary); background-color: rgba(38,132,255,0.05); }
+
+.tabs { display:flex; border-bottom:1px solid #ddd; margin-bottom:1rem; }
+.tab { padding:0.75rem 1.5rem; cursor:pointer; border-bottom:3px solid transparent; transition:var(--transition);}
+.tab.active{border-bottom:3px solid var(--primary); color:var(--primary); font-weight:600;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+.options-container { margin-top:2rem; background-color:var(--card-bg); padding:2rem; border-radius:var(--border-radius); box-shadow:var(--box-shadow);}
+.option-label { font-weight:600; margin-bottom:0.3rem;}
+.option-description { font-size:0.85rem; color:#666; margin-bottom:0.75rem; }
+
+.status-bar { position:fixed; bottom:0; left:0; right:0; background-color:var(--primary); color:#fff; padding:0.75rem 2rem; display:flex; justify-content:space-between; align-items:center; font-size:0.9rem;}
+.toast { position:fixed; top:1rem; right:1rem; background-color:var(--accent); color:#fff; padding:1rem 1.5rem; border-radius:var(--border-radius); box-shadow:var(--box-shadow); opacity:0; transform:translateY(-100px); transition:var(--transition);}
+.toast.show{opacity:1; transform:translateY(0);}
+
+.checkbox-container{display:flex; align-items:center; gap:0.5rem;}
+.preview-container{max-height:200px; overflow-y:auto; border:1px solid #ccc; border-radius:var(--border-radius); padding:0.5rem; margin-top:0.5rem; font-size:0.85rem;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>CSV to JSON Converter</h1>
+<p class="subtitle">Convert CSV to JSON instantly. Supports custom delimiters, headers, and advanced formatting.</p>
+
+<div class="app-container">
+  <!-- CSV Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fas fa-file-csv"></i> CSV Input</h2>
+      <div class="panel-actions">
+        <button id="clearCsvBtn" class="btn btn-outline"><i class="fas fa-trash-alt"></i> Clear</button>
+        <button id="exampleCsvBtn" class="btn btn-outline"><i class="fas fa-lightbulb"></i> Example</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="input-text">Text Input</div>
+      <div class="tab" data-tab="input-file">File Upload</div>
+    </div>
+    <div class="tab-content active" id="input-text">
+      <textarea id="csvInput" placeholder="Paste your CSV data here...&#10;Example:&#10;name,age,email&#10;John Doe,30,john@example.com"></textarea>
+    </div>
+    <div class="tab-content" id="input-file">
+      <div id="dragDropArea" class="drag-drop-area">
+        <div class="drag-drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+        <div class="drag-drop-text">Drag & Drop CSV File Here</div>
+        <div class="drag-drop-hint">or click to browse files</div>
+        <input type="file" id="fileInput" class="file-input" accept=".csv,.txt">
+      </div>
+      <div id="fileInfo" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span><i class="fas fa-file-alt"></i> <span id="fileName">No file selected</span></span>
+          <button id="removeFileBtn" class="btn btn-warning"><i class="fas fa-times"></i> Remove</button>
+        </div>
+        <div id="filePreview" class="preview-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON Panel -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fab fa-js-square"></i> JSON Output</h2>
+      <div class="panel-actions">
+        <button id="copyJsonBtn" class="btn btn-success"><i class="far fa-copy"></i> Copy</button>
+        <button id="downloadJsonBtn" class="btn btn-primary"><i class="fas fa-download"></i> Download</button>
+      </div>
+    </div>
+    <textarea id="jsonOutput" placeholder="JSON output will appear here..." readonly></textarea>
+    <div id="errorMessage" class="option-description" style="color: var(--error); display:none;"></div>
+  </div>
+</div>
+
+<div class="options-container">
+  <h3 class="option-label"><i class="fas fa-cog"></i> Conversion Options</h3>
+  <div class="option-group">
+    <label class="option-label">Delimiter</label>
+    <select id="delimiter">
+      <option value="," selected>Comma (,)</option>
+      <option value=";">Semicolon (;)</option>
+      <option value="\t">Tab (\t)</option>
+      <option value="|">Pipe (|)</option>
+      <option value="custom">Custom...</option>
+    </select>
+    <input type="text" id="customDelimiter" placeholder="Enter custom delimiter" style="display:none;">
+  </div>
+
+  <div class="option-group checkbox-container">
+    <input type="checkbox" id="hasHeader" checked>
+    <label>First row contains headers</label>
+  </div>
+
+  <div class="option-group">
+    <label class="option-label">Output Format</label>
+    <select id="outputFormat">
+      <option value="array" selected>Array of Objects</option>
+      <option value="object">Object with Keys</option>
+      <option value="minified">Minified JSON</option>
+    </select>
+  </div>
+
+  <div class="option-group">
+    <label class="option-label">Quote Character</label>
+    <select id="quoteChar">
+      <option value='"' selected>Double Quote (")</option>
+      <option value="'">Single Quote (')</option>
+    </select>
+  </div>
+
+  <div class="option-group checkbox-container">
+    <input type="checkbox" id="transpose">
+    <label>Transpose Data (Swap rows/columns)</label>
+  </div>
+
+  <div class="option-group checkbox-container">
+    <input type="checkbox" id="parseNumbers" checked>
+    <label>Parse Numbers</label>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-message"><i class="fas fa-info-circle"></i> <span id="statusText">Ready</span></div>
+</div>
+
+<div id="toast" class="toast"><i class="fas fa-check-circle"></i> <span id="toastMessage">JSON copied!</span></div>
+
+<script>
+  // -------- Tabs --------
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', ()=>{
+      tabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      tabContents.forEach(c=>c.classList.remove('active'));
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // -------- Drag & Drop --------
+  const dragArea = document.getElementById('dragDropArea');
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const fileName = document.getElementById('fileName');
+  const filePreview = document.getElementById('filePreview');
+  const removeFileBtn = document.getElementById('removeFileBtn');
+  dragArea.addEventListener('click', ()=>fileInput.click());
+  dragArea.addEventListener('dragover', e=>{e.preventDefault(); dragArea.classList.add('dragover');});
+  dragArea.addEventListener('dragleave', e=>{dragArea.classList.remove('dragover');});
+  dragArea.addEventListener('drop', e=>{e.preventDefault(); dragArea.classList.remove('dragover'); handleFiles(e.dataTransfer.files);});
+  fileInput.addEventListener('change', ()=>handleFiles(fileInput.files));
+  removeFileBtn.addEventListener('click', ()=>{fileInput.value=''; fileInfo.style.display='none'; filePreview.innerHTML=''; fileName.textContent='No file selected';});
+
+  function handleFiles(files){
+    if(files.length===0) return;
+    const file = files[0];
+    fileInfo.style.display='block';
+    fileName.textContent=file.name;
+    const reader = new FileReader();
+    reader.onload = e=>{filePreview.textContent=e.target.result; document.getElementById('csvInput').value=e.target.result; convertCSV();}
+    reader.readAsText(file);
+  }
+
+  // -------- Conversion --------
+  const csvInput = document.getElementById('csvInput');
+  const jsonOutput = document.getElementById('jsonOutput');
+  const delimiterSelect = document.getElementById('delimiter');
+  const customDelimiter = document.getElementById('customDelimiter');
+  const hasHeader = document.getElementById('hasHeader');
+  const outputFormat = document.getElementById('outputFormat');
+  const quoteChar = document.getElementById('quoteChar');
+  const transpose = document.getElementById('transpose');
+  const parseNumbers = document.getElementById('parseNumbers');
+  const statusText = document.getElementById('statusText');
+  const toast = document.getElementById('toast');
+
+  delimiterSelect.addEventListener('change', ()=>{
+    customDelimiter.style.display = delimiterSelect.value==='custom' ? 'block':'none';
+    convertCSV();
+  });
+  [csvInput, hasHeader, outputFormat, quoteChar, transpose, parseNumbers, customDelimiter].forEach(el=>el.addEventListener('input', convertCSV));
+  document.getElementById('exampleCsvBtn').addEventListener('click', ()=>{
+    csvInput.value="name,age,email\nJohn Doe,30,john@example.com\nJane Smith,25,jane@example.com"; convertCSV();
+  });
+  document.getElementById('clearCsvBtn').addEventListener('click', ()=>{csvInput.value=''; jsonOutput.value='';});
+
+  function convertCSV(){
+    const csv = csvInput.value.trim();
+    if(!csv){ jsonOutput.value=''; return; }
+    const delim = delimiterSelect.value==='custom' ? customDelimiter.value || ',' : delimiterSelect.value;
+    const lines = csv.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length===0) return;
+
+    let headers=[], data=[];
+    if(hasHeader.checked){ headers = lines.shift().split(delim);}
+    else{ headers = lines[0].split(delim).map((_,i)=>'col'+i);}
+    data = lines.map(line=>{
+      const row = line.split(delim).map(v=>parseNumbers.checked && !isNaN(v) ? Number(v):v);
+      return headers.reduce((obj,h,i)=>{obj[h]=row[i]; return obj;},{});
+    });
+
+    let json='';
+    if(outputFormat.value==='array'){ json = JSON.stringify(data, null, 2);}
+    else if(outputFormat.value==='object'){ json = JSON.stringify(Object.fromEntries(data.map(d=>[d[headers[0]],d])), null, 2);}
+    else if(outputFormat.value==='minified'){ json = JSON.stringify(data);}
+    if(quoteChar.value!='"') json=json.replace(/"/g,quoteChar.value);
+
+    jsonOutput.value=json;
+    statusText.textContent=`Converted ${lines.length} rows`;
+  }
+
+  csvInput.addEventListener('input', convertCSV);
+  convertCSV();
+
+  // -------- Copy & Download --------
+  document.getElementById('copyJsonBtn').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(jsonOutput.value).then(()=>{showToast('JSON copied!');});
+  });
+  document.getElementById('downloadJsonBtn').addEventListener('click', ()=>{
+    const blob = new Blob([jsonOutput.value], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download='data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  function showToast(msg){
+    document.getElementById('toastMessage').textContent=msg;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'),2000);
+  }
+</script>
+</body>
+</html>
